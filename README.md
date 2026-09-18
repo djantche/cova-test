@@ -74,11 +74,13 @@ Configuration par variables d'environnement (voir `src/main/resources/applicatio
 
 | Variable            | Défaut          | Description                     |
 |---------------------|-----------------|----------------------------------|
+| `DB_URL`            | (construite depuis les variables ci-dessous) | URL JDBC complète (prioritaire). Exemple Render : `jdbc:mysql://<host>:<port>/<db>?sslMode=REQUIRED` |
 | `DB_HOST`           | `localhost`     | Hôte MySQL                       |
 | `DB_PORT`           | `3306`          | Port MySQL                       |
 | `DB_NAME`           | `taskmanager`   | Nom de la base                   |
 | `DB_USER`           | `taskmanager`   | Utilisateur MySQL                 |
 | `DB_PASSWORD`       | `taskmanager`   | Mot de passe MySQL                 |
+| `DB_SSL_MODE`       | `DISABLED`      | Mode SSL MySQL (`DISABLED`, `REQUIRED`,...) — utilisez `REQUIRED` si l'hôte l'exige |
 | `JWT_SECRET`        | (valeur par défaut fournie) | Clé secrète HMAC pour signer les JWT |
 | `JWT_EXPIRATION_MS` | `86400000` (24h)| Durée de validité du token        |
 

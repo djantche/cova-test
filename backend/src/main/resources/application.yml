@@ -5,7 +5,9 @@ spring:
   application:
     name: taskmanager
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:taskmanager}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    # URL JDBC complète surchargeable via DB_URL (utile sur les PaaS type Render).
+    # Sinon elle est construite depuis DB_HOST/DB_PORT/DB_NAME.
+    url: ${DB_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:taskmanager}?createDatabaseIfNotExist=true&sslMode=${DB_SSL_MODE:DISABLED}&allowPublicKeyRetrieval=true}
     username: ${DB_USER:taskmanager}
     password: ${DB_PASSWORD:taskmanager}
     driver-class-name: com.mysql.cj.jdbc.Driver
