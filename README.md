@@ -81,6 +81,8 @@ Configuration par variables d'environnement (voir `src/main/resources/applicatio
 | `DB_USER`           | `taskmanager`   | Utilisateur MySQL                 |
 | `DB_PASSWORD`       | `taskmanager`   | Mot de passe MySQL                 |
 | `DB_SSL_MODE`       | `DISABLED`      | Mode SSL MySQL (`DISABLED`, `REQUIRED`,...) — utilisez `REQUIRED` si l'hôte l'exige |
+| `DB_POOL_MAX`       | `3`             | Taille max du pool HikariCP — à réduire si votre hébergeur MySQL limite `max_user_connections` (ex: plans gratuits) |
+| `DB_POOL_MIN_IDLE`  | `1`             | Connexions minimum maintenues ouvertes par le pool |
 | `JWT_SECRET`        | (valeur par défaut fournie) | Clé secrète HMAC pour signer les JWT |
 | `JWT_EXPIRATION_MS` | `86400000` (24h)| Durée de validité du token        |
 

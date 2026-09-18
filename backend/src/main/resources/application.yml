@@ -11,6 +11,12 @@ spring:
     username: ${DB_USER:taskmanager}
     password: ${DB_PASSWORD:taskmanager}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # Les plans gratuits (ex: Clever Cloud DEV) limitent souvent le nombre de
+      # connexions simultanées autorisées (max_user_connections=5) ; on reste
+      # largement en dessous pour laisser de la marge à d'autres clients.
+      maximum-pool-size: ${DB_POOL_MAX:3}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
   jpa:
     hibernate:
       ddl-auto: update
