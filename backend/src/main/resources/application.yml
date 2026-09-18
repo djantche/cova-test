@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: taskmanager
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:taskmanager}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USER:taskmanager}
+    password: ${DB_PASSWORD:taskmanager}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:c92f1c9c8e6a4b2d9e6d1a7f3b5c8e2a4d6f9b1c3e5a7d9f1b3c5e7a9d1f3b5c}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
