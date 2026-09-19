@@ -4,3 +4,6 @@
 .vscode/
 .env
 .env.local
+
+# Intermédiaires générés depuis branding/*.svg (voir branding/README.md)
+branding/*.png

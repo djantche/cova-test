@@ -1,6 +1,6 @@
 {
-    "name": "taskmanager_mobile",
-    "short_name": "taskmanager_mobile",
+    "name": "Task Manager",
+    "short_name": "Task Manager",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

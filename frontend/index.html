@@ -1,13 +1,67 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+
+    <title>Task Manager — Organisez vos tâches</title>
+    <meta
+      name="description"
+      content="Task Manager : créez, filtrez et suivez vos tâches depuis le web ou le mobile. Application full-stack React, Spring Boot et Flutter."
+    />
+    <meta name="author" content="djantche" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Task Manager" />
+    <meta property="og:title" content="Task Manager — Organisez vos tâches" />
+    <meta
+      property="og:description"
+      content="Créez, filtrez et suivez vos tâches depuis le web ou le mobile."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Task Manager — Organisez vos tâches" />
+    <meta
+      name="twitter:description"
+      content="Créez, filtrez et suivez vos tâches depuis le web ou le mobile."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <meta name="apple-mobile-web-app-title" content="Task Manager" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <script>
+      // Applique le thème système avant le premier rendu pour éviter tout flash,
+      // et suit les changements de préférence à chaud.
+      (function () {
+        var query = window.matchMedia("(prefers-color-scheme: dark)");
+        var apply = function (matches) {
+          document.documentElement.classList.toggle("dark", matches);
+        };
+        apply(query.matches);
+        query.addEventListener("change", function (e) {
+          apply(e.matches);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      Task Manager a besoin de JavaScript pour fonctionner. Merci de l'activer dans votre navigateur.
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

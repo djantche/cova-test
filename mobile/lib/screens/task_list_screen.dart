@@ -3,6 +3,7 @@ import '../models/task.dart';
 import '../services/task_service.dart';
 import '../services/auth_service.dart';
 import '../services/api_client.dart';
+import '../widgets/skeleton.dart';
 import 'login_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
@@ -69,8 +70,33 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Future<void> _deleteTask(Task task) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer cette tâche ?'),
+        content: Text('« ${task.title} » sera définitivement supprimée.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await TaskService.deleteTask(task.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tâche supprimée')),
+      );
       _loadTasks();
     } catch (e) {
       if (!mounted) return;
@@ -170,7 +196,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const TaskListSkeleton()
                 : _tasks.isEmpty
                     ? _EmptyState(onRefresh: _loadTasks)
                     : RefreshIndicator(

@@ -20,8 +20,9 @@ Application de gestion de tâches full-stack : API REST **Spring Boot**, interfa
 ```
 cova-test/
 ├── backend/            API REST Spring Boot (Java 17, Spring Security, JPA, MySQL)
-├── frontend/           SPA React + Vite + TypeScript + Tailwind CSS
+├── frontend/           SPA React + Vite + TypeScript + Tailwind CSS + shadcn/ui
 ├── mobile/             Application Flutter (Android) consommant la même API
+├── branding/           Sources SVG de l'identité visuelle (icône, maskable, OG image)
 ├── docker-compose.yml  Stack complète (MySQL + backend + frontend) pour le local
 └── .github/workflows/  Pipeline CI/CD (build, tests, images Docker, déploiement GCP)
 ```
@@ -109,9 +110,22 @@ npm run build
 ```
 
 Fonctionnalités : inscription/connexion, liste des tâches avec recherche et filtre par
-statut (déclenchés côté API), création/édition/suppression de tâches, gestion des
-erreurs API via des toasts, stockage du JWT en `localStorage` avec redirection
-automatique vers `/login` en cas de 401.
+statut (déclenchés côté API), création/édition/suppression de tâches (avec dialogue de
+confirmation avant suppression), gestion des erreurs API via des toasts, stockage du JWT
+en `localStorage` avec redirection automatique vers `/login` en cas de 401.
+
+Soin apporté à l'UX/UI :
+
+- **Skeletons** de chargement (plutôt qu'un spinner) sur la liste de tâches et au
+  démarrage de l'app, pour éviter les sauts de mise en page.
+- **Métadonnées complètes** : titre et description SEO, Open Graph / Twitter Card avec
+  image de partage, `theme-color` clair/sombre, `lang="fr"`, favicon SVG + PNG,
+  `apple-touch-icon` et manifest PWA (`site.webmanifest`) — l'app est installable.
+- **Accessibilité** : structure sémantique (`header`/`main`/`section`/`ul`), libellés
+  ARIA sur les contrôles à icône seule, `aria-live` sur la liste qui se met à jour,
+  états de focus visibles hérités de shadcn/ui.
+- **États vides** contextualisés (avec réinitialisation des filtres si une recherche
+  est active) et compteur de tâches terminées.
 
 ## Mobile — Flutter (bonus)
 
@@ -147,10 +161,19 @@ API peut prendre jusqu'à ~30-50s le temps qu'il redémarre (timeout client fix�
 60s dans `ApiClient`).
 
 L'application reproduit le flux principal du web avec une interface Material 3
-soignée (thème clair/sombre, cards, chips de filtre, feuille modale pour la saisie) :
-connexion/inscription (même JWT que l'API), liste des tâches avec recherche et
-filtre par statut, ajout/édition/suppression via une feuille modale (`ListView`,
-`TextField`, `ElevatedButton`).
+soignée (thème clair/sombre suivant le système, cards, chips de filtre, feuille
+modale pour la saisie, skeletons de chargement, dialogue de confirmation avant
+suppression) : connexion/inscription (même JWT que l'API), liste des tâches avec
+recherche et filtre par statut, ajout/édition/suppression (`ListView`, `TextField`,
+`ElevatedButton`).
+
+L'icône de lancement et le nom de l'app sont générés depuis `branding/` via
+[`flutter_launcher_icons`](https://pub.dev/packages/flutter_launcher_icons) (icône
+adaptative Android incluse) :
+
+```bash
+dart run flutter_launcher_icons
+```
 
 Tests :
 

@@ -33,7 +33,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="items-center text-center">
+        <CardHeader className="flex flex-col items-center text-center">
           <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <ListChecks className="size-6" />
           </div>
