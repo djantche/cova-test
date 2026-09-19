@@ -12,10 +12,15 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static const String baseUrl = String.fromEnvironment(
+  static const String _rawBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://10.0.2.2:8080',
+    defaultValue: 'https://cova-test.onrender.com',
   );
+
+  /// Strips a trailing slash so `$baseUrl$path` never produces `//api/...`
+  /// regardless of how API_URL was passed in via --dart-define.
+  static String get baseUrl =>
+      _rawBaseUrl.endsWith('/') ? _rawBaseUrl.substring(0, _rawBaseUrl.length - 1) : _rawBaseUrl;
 
   static const _tokenKey = 'taskmanager_token';
 
@@ -58,37 +63,43 @@ class ApiClient {
     throw ApiException(response.statusCode, message);
   }
 
+  // Render's free plan spins the backend down after inactivity; the first
+  // request after a cold start can take ~30-50s to wake it back up.
+  static const _timeout = Duration(seconds: 60);
+
   static Future<dynamic> get(String path, {bool auth = true}) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(auth: auth),
-    );
+    final response = await http
+        .get(Uri.parse('$baseUrl$path'), headers: await _headers(auth: auth))
+        .timeout(_timeout);
     return _handle(response);
   }
 
   static Future<dynamic> post(String path, Map<String, dynamic> body, {bool auth = true}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(auth: auth),
-      body: jsonEncode(body),
-    );
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: await _headers(auth: auth),
+          body: jsonEncode(body),
+        )
+        .timeout(_timeout);
     return _handle(response);
   }
 
   static Future<dynamic> put(String path, Map<String, dynamic> body, {bool auth = true}) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(auth: auth),
-      body: jsonEncode(body),
-    );
+    final response = await http
+        .put(
+          Uri.parse('$baseUrl$path'),
+          headers: await _headers(auth: auth),
+          body: jsonEncode(body),
+        )
+        .timeout(_timeout);
     return _handle(response);
   }
 
   static Future<void> delete(String path, {bool auth = true}) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl$path'),
-      headers: await _headers(auth: auth),
-    );
+    final response = await http
+        .delete(Uri.parse('$baseUrl$path'), headers: await _headers(auth: auth))
+        .timeout(_timeout);
     _handle(response);
   }
 }

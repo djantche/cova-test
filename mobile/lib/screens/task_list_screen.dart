@@ -39,7 +39,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Impossible de charger les tâches');
+      setState(() => _error = 'Impossible de charger les tâches. Le serveur met parfois ~30s à se réveiller.');
     } finally {
       setState(() => _loading = false);
     }
@@ -57,6 +57,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => _TaskFormSheet(
         task: task,
         onSaved: _loadTasks,
@@ -78,92 +82,109 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Manager'),
+        title: const Text('Mes tâches'),
         actions: [
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
+          IconButton(
+            tooltip: 'Déconnexion',
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: _logout,
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: Column(
               children: [
                 TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
-                    labelText: 'Rechercher une tâche',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher une tâche',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded),
+                            onPressed: () {
+                              _searchController.clear();
+                              _loadTasks();
+                            },
+                          )
+                        : null,
                   ),
                   onSubmitted: (_) => _loadTasks(),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<TaskStatus?>(
-                        initialValue: _statusFilter,
-                        decoration: const InputDecoration(
-                          labelText: 'Statut',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text('Tous les statuts')),
-                          ...TaskStatus.values.map(
-                            (s) => DropdownMenuItem(value: s, child: Text(taskStatusLabel(s))),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => _statusFilter = value);
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _FilterChip(
+                        label: 'Tous',
+                        selected: _statusFilter == null,
+                        onTap: () {
+                          setState(() => _statusFilter = null);
                           _loadTasks();
                         },
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(onPressed: _loadTasks, child: const Text('Filtrer')),
-                  ],
+                      const SizedBox(width: 8),
+                      ...TaskStatus.values.map(
+                        (s) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _FilterChip(
+                            label: taskStatusLabel(s),
+                            selected: _statusFilter == s,
+                            onTap: () {
+                              setState(() => _statusFilter = s);
+                              _loadTasks();
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          if (_error != null) Padding(padding: const EdgeInsets.all(8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: scheme.errorContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(_error!, style: TextStyle(color: scheme.error, fontSize: 13)),
+              ),
+            ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _tasks.isEmpty
-                    ? const Center(child: Text('Aucune tâche pour le moment.'))
+                    ? _EmptyState(onRefresh: _loadTasks)
                     : RefreshIndicator(
                         onRefresh: _loadTasks,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                           itemCount: _tasks.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final task = _tasks[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                title: Text(task.title),
-                                subtitle: Text(task.description?.isNotEmpty == true
-                                    ? task.description!
-                                    : taskStatusLabel(task.status)),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Chip(label: Text(taskStatusLabel(task.status))),
-                                    IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      onPressed: () => _openTaskForm(task: task),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () => _deleteTask(task),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            return _TaskCard(
+                              task: task,
+                              onEdit: () => _openTaskForm(task: task),
+                              onDelete: () => _deleteTask(task),
                             );
                           },
                         ),
@@ -171,9 +192,156 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openTaskForm(),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Nouvelle tâche'),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      selectedColor: scheme.primary,
+      backgroundColor: scheme.surfaceContainerHighest,
+      labelStyle: TextStyle(
+        color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      side: BorderSide.none,
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _EmptyState({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.inbox_rounded, size: 56, color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aucune tâche pour le moment',
+                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskCard extends StatelessWidget {
+  final Task task;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _TaskCard({required this.task, required this.onEdit, required this.onDelete});
+
+  static const Map<TaskStatus, Color> _statusColors = {
+    TaskStatus.TODO: Color(0xFF64748B),
+    TaskStatus.IN_PROGRESS: Color(0xFFD97706),
+    TaskStatus.DONE: Color(0xFF16A34A),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = _statusColors[task.status]!;
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 4, height: 40, decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(4))),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (task.description != null && task.description!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        task.description!,
+                        style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        taskStatusLabel(task.status),
+                        style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded, color: scheme.onSurfaceVariant),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  if (value == 'edit') onEdit();
+                  if (value == 'delete') onDelete();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 10), Text('Modifier')])),
+                  PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red), SizedBox(width: 10), Text('Supprimer', style: TextStyle(color: Colors.red))])),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -232,45 +400,73 @@ class _TaskFormSheetState extends State<_TaskFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 20,
+        right: 20,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(widget.task == null ? 'Nouvelle tâche' : 'Modifier la tâche',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(color: scheme.outlineVariant, borderRadius: BorderRadius.circular(4)),
+            ),
+          ),
+          Text(
+            widget.task == null ? 'Nouvelle tâche' : 'Modifier la tâche',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 18),
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(labelText: 'Titre', border: OutlineInputBorder()),
+            autofocus: widget.task == null,
+            decoration: const InputDecoration(labelText: 'Titre'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           TextField(
             controller: _descriptionController,
-            decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Description (optionnel)'),
             maxLines: 3,
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<TaskStatus>(
-            initialValue: _status,
-            decoration: const InputDecoration(labelText: 'Statut', border: OutlineInputBorder()),
-            items: TaskStatus.values
-                .map((s) => DropdownMenuItem(value: s, child: Text(taskStatusLabel(s))))
-                .toList(),
-            onChanged: (value) => setState(() => _status = value ?? TaskStatus.TODO),
+          const SizedBox(height: 14),
+          Text('Statut', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: TaskStatus.values.map((s) {
+              final selected = _status == s;
+              return ChoiceChip(
+                label: Text(taskStatusLabel(s)),
+                selected: selected,
+                onSelected: (_) => setState(() => _status = s),
+                showCheckmark: false,
+                selectedColor: scheme.primary,
+                backgroundColor: scheme.surfaceContainerHighest,
+                labelStyle: TextStyle(
+                  color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                side: BorderSide.none,
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _saving ? null : _submit,
             child: _saving
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(widget.task == null ? 'Ajouter' : 'Enregistrer'),
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text(widget.task == null ? 'Ajouter la tâche' : 'Enregistrer'),
           ),
         ],
       ),

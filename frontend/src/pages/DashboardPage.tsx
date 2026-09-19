@@ -1,33 +1,33 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useToast, extractErrorMessage } from "../context/ToastContext";
-import * as tasksApi from "../api/tasks";
-import type { Task, TaskPayload, TaskStatus } from "../types";
-import { TaskForm } from "../components/TaskForm";
-import { TaskItem } from "../components/TaskItem";
+import { toast } from "sonner";
+import { ListChecks, LogOut, Search, Inbox, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { extractErrorMessage } from "@/lib/errors";
+import { STATUS_LABELS } from "@/lib/task-status";
+import * as tasksApi from "@/api/tasks";
+import type { Task, TaskPayload, TaskStatus } from "@/types";
+import { TaskForm } from "@/components/TaskForm";
+import { TaskItem } from "@/components/TaskItem";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const STATUS_FILTERS: { value: TaskStatus | ""; label: string }[] = [
-  { value: "", label: "Tous les statuts" },
-  { value: "TODO", label: "À faire" },
-  { value: "IN_PROGRESS", label: "En cours" },
-  { value: "DONE", label: "Terminée" },
-];
+const ALL_STATUSES = "ALL";
 
 export function DashboardPage() {
   const { user, logout } = useAuth();
-  const { showToast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<TaskStatus | "">("");
+  const [status, setStatus] = useState<TaskStatus | typeof ALL_STATUSES>(ALL_STATUSES);
   const [search, setSearch] = useState("");
 
   async function loadTasks() {
     setLoading(true);
     try {
-      const data = await tasksApi.fetchTasks(status, search);
+      const data = await tasksApi.fetchTasks(status === ALL_STATUSES ? "" : status, search);
       setTasks(data);
     } catch (err) {
-      showToast(extractErrorMessage(err), "error");
+      toast.error(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -43,9 +43,9 @@ export function DashboardPage() {
     try {
       const created = await tasksApi.createTask(payload);
       setTasks((prev) => [created, ...prev]);
-      showToast("Tâche ajoutée", "success");
+      toast.success("Tâche ajoutée");
     } catch (err) {
-      showToast(extractErrorMessage(err), "error");
+      toast.error(extractErrorMessage(err));
     }
   }
 
@@ -53,9 +53,9 @@ export function DashboardPage() {
     try {
       const updated = await tasksApi.updateTask(id, payload);
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-      showToast("Tâche mise à jour", "success");
+      toast.success("Tâche mise à jour");
     } catch (err) {
-      showToast(extractErrorMessage(err), "error");
+      toast.error(extractErrorMessage(err));
     }
   }
 
@@ -63,56 +63,78 @@ export function DashboardPage() {
     try {
       await tasksApi.deleteTask(id);
       setTasks((prev) => prev.filter((t) => t.id !== id));
-      showToast("Tâche supprimée", "success");
+      toast.success("Tâche supprimée");
     } catch (err) {
-      showToast(extractErrorMessage(err), "error");
+      toast.error(extractErrorMessage(err));
     }
   }
 
+  const initial = user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="font-semibold text-slate-900">Task Manager</h1>
-            <p className="text-sm text-slate-500">Bonjour, {user?.name}</p>
+    <div className="min-h-screen bg-muted/30">
+      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <ListChecks className="size-4.5" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold leading-tight">Task Manager</h1>
+              <p className="text-xs leading-tight text-muted-foreground">Bonjour, {user?.name}</p>
+            </div>
           </div>
-          <button
-            onClick={logout}
-            className="text-sm px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
-          >
-            Déconnexion
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+              {initial}
+            </div>
+            <Button variant="outline" size="sm" onClick={logout}>
+              <LogOut /> Déconnexion
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
         <TaskForm onSubmit={handleCreate} />
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            placeholder="Rechercher une tâche..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus | "")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            {STATUS_FILTERS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher une tâche..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus | typeof ALL_STATUSES)}>
+            <SelectTrigger className="sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_STATUSES}>Tous les statuts</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-3">
-          {loading && <p className="text-sm text-slate-400 text-center py-8">Chargement des tâches...</p>}
+          {loading && (
+            <div className="flex flex-col items-center gap-2 py-14 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+              <p className="text-sm">Chargement des tâches...</p>
+            </div>
+          )}
           {!loading && tasks.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-8">Aucune tâche pour le moment.</p>
+            <div className="flex flex-col items-center gap-2 py-14 text-muted-foreground">
+              <Inbox className="size-8" />
+              <p className="text-sm">Aucune tâche pour le moment.</p>
+            </div>
           )}
           {!loading &&
             tasks.map((task) => (

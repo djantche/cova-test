@@ -36,9 +36,10 @@ backend).
   mode stateless avec un filtre JWT maison (`jjwt`), BCrypt pour les mots de passe.
   Les erreurs métier (email déjà utilisé, tâche introuvable, validation...) sont
   centralisées dans un `@RestControllerAdvice` et renvoyées en JSON structuré.
-- **Frontend** : React + Vite + TypeScript, Tailwind CSS v4 pour le style, React
-  Router pour la navigation, Axios avec intercepteur pour injecter le token JWT et
-  gérer les 401 (redirection automatique vers `/login`), système de toasts maison
+- **Frontend** : React + Vite + TypeScript, Tailwind CSS v4 + **shadcn/ui** (Radix
+  primitives) pour les composants (Card, Input, Select, Badge, DropdownMenu...),
+  React Router pour la navigation, Axios avec intercepteur pour injecter le token
+  JWT et gérer les 401 (redirection automatique vers `/login`), toasts via `sonner`
   pour la gestion des erreurs API.
 - **Mobile** : Flutter (Dart), package `http` pour consommer l'API, `shared_preferences`
   pour persister le token JWT sur l'appareil. Les écrans (login, inscription, liste de
@@ -117,26 +118,39 @@ automatique vers `/login` en cas de 401.
 Outillage installé sans Android Studio : **fvm** (Flutter Version Management) +
 **Android SDK command-line tools** (`sdkmanager`) uniquement.
 
+Par défaut l'app pointe sur le backend déployé (`https://cova-test.onrender.com`,
+voir `ApiClient.baseUrl` dans `lib/services/api_client.dart`). Pour cibler un autre
+backend, surchargez `API_URL` :
+
 ```bash
 cd mobile
 flutter pub get
 
-# Émulateur/AVD Android (10.0.2.2 = alias localhost côté hôte pour l'émulateur) :
+# Backend local, émulateur/AVD Android (10.0.2.2 = alias localhost côté hôte) :
 flutter run --dart-define=API_URL=http://10.0.2.2:8080
 
 # Appareil physique sur le même réseau que le backend :
 flutter run --dart-define=API_URL=http://<ip-machine-backend>:8080
+
+# Backend déployé (comportement par défaut, --dart-define optionnel) :
+flutter run --dart-define=API_URL=https://cova-test.onrender.com
 ```
 
-Build d'un APK debug :
+Build d'un APK release (pointant sur le backend déployé) :
 
 ```bash
-flutter build apk --debug --dart-define=API_URL=http://10.0.2.2:8080
+flutter build apk --release --dart-define=API_URL=https://cova-test.onrender.com
 ```
 
-L'application reproduit le flux principal du web : connexion/inscription (même JWT
-que l'API), liste des tâches avec recherche et filtre par statut, ajout/édition/
-suppression via une feuille modale (`ListView`, `TextField`, `ElevatedButton`).
+⚠️ Le backend Render gratuit se met en veille après inactivité : le premier appel
+API peut prendre jusqu'à ~30-50s le temps qu'il redémarre (timeout client fixé à
+60s dans `ApiClient`).
+
+L'application reproduit le flux principal du web avec une interface Material 3
+soignée (thème clair/sombre, cards, chips de filtre, feuille modale pour la saisie) :
+connexion/inscription (même JWT que l'API), liste des tâches avec recherche et
+filtre par statut, ajout/édition/suppression via une feuille modale (`ListView`,
+`TextField`, `ElevatedButton`).
 
 Tests :
 

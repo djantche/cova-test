@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(const TaskManagerApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Task Manager'), findsOneWidget);
+    expect(find.text('Content de vous revoir'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
   });
 }

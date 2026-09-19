@@ -1,18 +1,23 @@
 import { useState } from "react";
-import type { Task, TaskPayload } from "../types";
-import { TaskForm, STATUS_LABELS } from "./TaskForm";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import type { Task, TaskPayload } from "@/types";
+import { STATUS_LABELS, STATUS_BADGE_VARIANT, STATUS_DOT_CLASS } from "@/lib/task-status";
+import { TaskForm } from "./TaskForm";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TaskItemProps {
   task: Task;
   onUpdate: (id: number, payload: TaskPayload) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
-
-const STATUS_STYLES: Record<Task["status"], string> = {
-  TODO: "bg-slate-100 text-slate-700",
-  IN_PROGRESS: "bg-amber-100 text-amber-700",
-  DONE: "bg-green-100 text-green-700",
-};
 
 export function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
   const [editing, setEditing] = useState(false);
@@ -32,41 +37,68 @@ export function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="font-medium text-slate-900 truncate">{task.title}</h3>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[task.status]}`}>
-            {STATUS_LABELS[task.status]}
-          </span>
+    <Card>
+      <CardContent className="flex items-start justify-between gap-4 px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`size-2 shrink-0 rounded-full ${STATUS_DOT_CLASS[task.status]}`} />
+            <h3 className="truncate font-medium">{task.title}</h3>
+            <Badge variant={STATUS_BADGE_VARIANT[task.status]}>{STATUS_LABELS[task.status]}</Badge>
+          </div>
+          {task.description && (
+            <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground/70">
+            Mis à jour le {new Date(task.updatedAt).toLocaleString()}
+          </p>
         </div>
-        {task.description && <p className="text-sm text-slate-500 mt-1">{task.description}</p>}
-        <p className="text-xs text-slate-400 mt-2">
-          Mis à jour le {new Date(task.updatedAt).toLocaleString()}
-        </p>
-      </div>
-      <div className="flex gap-2 shrink-0">
-        <button
-          onClick={() => setEditing(true)}
-          className="text-sm px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
-        >
-          Modifier
-        </button>
-        <button
-          disabled={deleting}
-          onClick={async () => {
-            setDeleting(true);
-            try {
-              await onDelete(task.id);
-            } finally {
-              setDeleting(false);
-            }
-          }}
-          className="text-sm px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-        >
-          Supprimer
-        </button>
-      </div>
-    </div>
+        <div className="hidden shrink-0 gap-2 sm:flex">
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+            <Pencil /> Modifier
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={deleting}
+            onClick={async () => {
+              setDeleting(true);
+              try {
+                await onDelete(task.id);
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          >
+            <Trash2 /> Supprimer
+          </Button>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 sm:hidden">
+              <MoreVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditing(true)}>
+              <Pencil /> Modifier
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              disabled={deleting}
+              onClick={async () => {
+                setDeleting(true);
+                try {
+                  await onDelete(task.id);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              <Trash2 /> Supprimer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardContent>
+    </Card>
   );
 }
